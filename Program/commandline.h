@@ -46,6 +46,9 @@ class commandline
 		// nbDepots, if given (used to generate the MDCARP instances)
 		int nbDep ;
 
+		// time-capacitated problem, if given (problem in which all costs and the vehicle capacity are time-based)
+		bool timeCapacitated ;
+
         // instance path
         string instance_name;
 
@@ -74,6 +77,7 @@ class commandline
 		int get_nbVeh();
 		int get_nbDep();
         int get_seed();
+        bool get_timeCapacitated();
 
         // say if the commandline is valid
         bool is_valid();

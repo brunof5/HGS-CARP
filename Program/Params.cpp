@@ -268,7 +268,10 @@ void Params::preleveDonnees (string nomInstance)
 		{
 			for (int j=0 ; j < nbVehiculesPerDep ; j++)
 			{
-				ordreVehicules[kk].push_back(Vehicle(i,1000000,vc)); // Duration constraint set to a high value
+				if (timeCapacitated)
+					ordreVehicules[kk].push_back(Vehicle(i,vc,1000000)); // When solving a time-capacitated problem, duration constraint set to vehicle capacity and capacity constraint set to a high value
+				else
+					ordreVehicules[kk].push_back(Vehicle(i,1000000,vc)); // Duration constraint set to a high value
 				dayCapacity[kk] += vc ;
 			}
 		}
@@ -586,7 +589,7 @@ void Params::setPatterns_PCARP(Client * myCli)
 	}
 }
 
-Params::Params(string nomInstance, string nomSolution, string nomBKS, int seedRNG, int type, int nbVeh, int nbDep, bool isSearchingFeasible):type(type), nbVehiculesPerDep(nbVeh), nbDepots(nbDep), isSearchingFeasible(isSearchingFeasible)
+Params::Params(string nomInstance, string nomSolution, string nomBKS, int seedRNG, int type, bool timeCapacitated, int nbVeh, int nbDep, bool isSearchingFeasible):type(type), timeCapacitated(timeCapacitated), nbVehiculesPerDep(nbVeh), nbDepots(nbDep), isSearchingFeasible(isSearchingFeasible)
 {
 	// Main constructor of Params
 	pathToInstance = nomInstance ;
@@ -838,8 +841,13 @@ void Params::ar_parseOtherLinesNEARP()
 		fichier >> cli[iCour].demand ;
 		totalDemand += cli[iCour].demand ;
 		fichier >> cli[iCour].ar_serviceCost01 ;
-		cli[iCour].ar_serviceCost01 = 0 ; // to remove the base cost from the results.
-		cli[iCour].ar_serviceCost10 = 0 ; // to remove the base cost from the results.
+		if (timeCapacitated)
+			cli[iCour].ar_serviceCost10 = cli[iCour].ar_serviceCost01 ;
+		else
+		{
+			cli[iCour].ar_serviceCost01 = 0 ; // to remove the base cost from the results.
+			cli[iCour].ar_serviceCost10 = 0 ; // to remove the base cost from the results.
+		}
 		iCour ++ ;
 	}
 	getline(fichier, contenu);
@@ -861,8 +869,13 @@ void Params::ar_parseOtherLinesNEARP()
 		fichier >> cli[iCour].demand ;
 		totalDemand += cli[iCour].demand ;
 		fichier >> cli[iCour].ar_serviceCost01 ;
-		cli[iCour].ar_serviceCost01 = myTravelCost ;
-		cli[iCour].ar_serviceCost10 = myTravelCost ;
+		if (timeCapacitated)
+			cli[iCour].ar_serviceCost10 = cli[iCour].ar_serviceCost01 ;
+		else
+		{
+			cli[iCour].ar_serviceCost01 = myTravelCost ;
+			cli[iCour].ar_serviceCost10 = myTravelCost ;
+		}
 		iCour ++ ;
 	}
 	getline(fichier, contenu);
@@ -897,7 +910,8 @@ void Params::ar_parseOtherLinesNEARP()
 		fichier >> cli[iCour].demand ;
 		totalDemand += cli[iCour].demand ;
 		fichier >> cli[iCour].ar_serviceCost01 ;
-		cli[iCour].ar_serviceCost01 = myTravelCost ;
+		if (!timeCapacitated)
+			cli[iCour].ar_serviceCost01 = myTravelCost ;
 		cli[iCour].ar_serviceCost10 = 1.e20 ; // This is an arc
 		iCour ++ ;
 	}

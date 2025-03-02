@@ -84,6 +84,7 @@ public:
 	bool multiDepot ; // is there multiple depots in the problem
 	bool periodique ; // is there multiple periods in the problem
 	bool isTurnPenalties ; // is there turn penalties
+	bool timeCapacitated ; // is the problem time-capacitated (problem in which all costs and the vehicle capacity are time-based)
 
 	int ar_NodesRequired ; // number of nodes which require a visit
 	int ar_NodesNonRequired ; // number of other nodes
@@ -218,7 +219,7 @@ public:
 	void shuffleProches () ;
 
 	// constructor
-	Params(string nomInstance, string nomSolution, string nomBKS, int seedRNG, int type, int nbVeh, int nbDep, bool isSearchingFeasible);
+	Params(string nomInstance, string nomSolution, string nomBKS, int seedRNG, int type, bool timeCapacitated, int nbVeh, int nbDep, bool isSearchingFeasible);
 
 	// destructor
 	~Params(void);
