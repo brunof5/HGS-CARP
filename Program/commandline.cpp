@@ -41,7 +41,7 @@ void commandline::SetDefaultOutput(string to_parse)
 
 commandline::commandline(int argc, char* argv[])
 {
-	if (argc%2 != 0 || argc > 16 || argc < 2)
+	if (argc%2 != 0 || argc > 18 || argc < 2)
 	{
 		cout << "incorrect command line" << endl ;
 		command_ok = false;
@@ -57,6 +57,7 @@ commandline::commandline(int argc, char* argv[])
 	nbVeh = -1 ;
 	nbDep = -1 ;
 	timeCapacitated = false ;
+	softConstraints = false ;
 
 	// reading the commandline parameters
 	for ( int i = 2 ; i < argc ; i += 2 )
@@ -77,6 +78,8 @@ commandline::commandline(int argc, char* argv[])
 			nbDep = atoi(argv[i+1]);
 		else if ( string(argv[i]) == "-tcap" )
 			timeCapacitated = atoi(argv[i+1]) != 0;
+		else if ( string(argv[i]) == "-soft" )
+			softConstraints = atoi(argv[i+1]) != 0;
 		else
 		{
 			cout << "Non-recognized command : " << string(argv[i]) << endl ;
@@ -160,6 +163,11 @@ int commandline::get_seed()
 bool commandline::get_timeCapacitated()
 {
 	return timeCapacitated;
+}
+
+bool commandline::get_softConstraints()
+{
+	return softConstraints;
 }
 
 bool commandline::is_valid()

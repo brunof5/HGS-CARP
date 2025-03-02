@@ -49,6 +49,9 @@ class commandline
 		// time-capacitated problem, if given (problem in which all costs and the vehicle capacity are time-based)
 		bool timeCapacitated ;
 
+		// soft constraints, if given (solutions violating capacity or duration constraints will be accepted with cost penalties applied)
+		bool softConstraints ;
+
         // instance path
         string instance_name;
 
@@ -78,6 +81,7 @@ class commandline
 		int get_nbDep();
         int get_seed();
         bool get_timeCapacitated();
+        bool get_softConstraints();
 
         // say if the commandline is valid
         bool is_valid();

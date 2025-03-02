@@ -550,6 +550,113 @@ void Population::ExportBest (string nomFichier)
 	else
 	{
 		cout << "Impossible to find a feasible individual" << endl;
+		if (params->softConstraints)
+		{
+			cout << "Taking the best infeasible individual as solution since the soft constraints flag (-soft) is enabled" << endl;
+			
+			Individu * bestInvalide = getIndividuBestInvalide ();
+			
+			education(bestInvalide);
+			loc = trainer->localSearch ;
+
+			// Little debugging tests before printing
+			trainer->testPatternCorrectness();
+			
+			// Opening the file to write the solution
+			myfile.open(nomFichier.data());
+			myfile.precision(10);
+			cout.precision(10);
+			
+			// Writing the distance
+			if (params->type != 35)
+			{
+				cout << "Writing the best solution : distance : " << trainer->coutSol.distance ;
+				myfile << trainer->coutSol.distance << endl ;
+			}
+			else
+			{
+				cout << "Writing the best solution, maximum distance : " << bestInvalide->maxRoute ;
+				myfile << bestInvalide->maxRoute << endl ;
+			}
+
+			// Writing the number of routes
+			if (params->periodique)
+			{
+				cout << " | nbRoutes : " << params->nbVehiculesPerDep ;
+				myfile << params->nbVehiculesPerDep << endl ;
+			}
+			else
+			{
+				cout << " | nbRoutes : " << trainer->nbRoutes ;
+				myfile << trainer->nbRoutes << endl ;
+			}
+
+			cout << " | in " << nomFichier.c_str() << endl ;
+
+			// Printing the total time of the run
+			// (we print the number of clock ticks to help for short runs, the user will do the proper conversion) 
+			myfile << (long long) clock() << endl ;
+
+			// Printing the time to find the best solution
+			// (we print the number of clock ticks to help for short runs, the user will do the proper conversion) 
+			myfile << (long long) timeBest << endl ;
+
+			// Printing the routes and their content
+			for (int k=1 ; k <= params->nbDays ; k++)
+			{
+				compteur = 1 ;
+				allRoutes.push_back(vector < vector <int> > ());
+				allRoutesArcs.push_back(vector < vector <pair<int,int> > > ()) ;
+				for (int i=0 ; i < params->nombreVehicules[k] ; i++)
+				{	
+					// Test if the route is empty
+					if (!loc->routes[k][i].depot->suiv->estUnDepot)
+					{
+						// The route is not empty
+						// First, we pre-process again the data structures on the route with the flag "true", which allow to track back the orientation of the visits
+						loc->routes[k][i].updateRouteData(true); 
+						noeudActuel = loc->routes[k][i].depot->suiv ;
+						rout.clear();
+						rout.push_back(loc->routes[k][i].depot->cour);
+						rout.push_back(noeudActuel->cour);
+
+						while (!noeudActuel->estUnDepot)
+						{
+							noeudActuel = noeudActuel->suiv ;
+							rout.push_back(noeudActuel->cour);
+						}
+
+						allRoutes[k].push_back(rout);
+						allRoutesArcs[k].push_back(loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0]) ;
+
+						if( loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0].size() != rout.size())
+							throw string ("Issue : mismatch between the route size and the number of arcs reported by the SeqData");
+
+						myfile << " " << loc->routes[k][i].depot->cour ; // Printing the depot
+						myfile << " " << (k-1)%params->ancienNbDays + 1 ; // Printing the day
+						myfile << " " << compteur ; // Printing the index of the route
+						myfile << " " << loc->routes[k][i].depot->pred->seq0_i->load ; // Printing the total demand
+						myfile << " " << loc->routes[k][i].depot->pred->seq0_i->evaluation(loc->routes[k][i].depot->pred->seq0_i,loc->routes[k][i].vehicle) << " " ; // Printing the total cost of this route
+						
+						myfile << " " << (int)rout.size() ; // Printing the number of customers in the route
+						for (int j=0 ; j < (int)rout.size() ; j++ ) // Printing the visits and their orientation
+						{
+							if (rout[j] < params->nbDepots)
+								myfile << " (D " ;
+							else
+								myfile << " (S " ;
+							myfile << rout[j] << "," ;
+							myfile << loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0][j].first << "," ;
+							myfile << loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0][j].second << ")" ;
+						}
+						myfile << endl ;
+						compteur ++ ;
+					}
+				}
+			}
+
+			myfile.close();
+		}
 	}
 }
 
