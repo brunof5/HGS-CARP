@@ -863,8 +863,10 @@ void Params::ar_parseOtherLinesNEARP()
 
 		// setting the distance between the nodes (here its symmetric because it's an edge)
 		fichier >> myTravelCost ;
-		ar_distanceNodes[cli[iCour].ar_nodesExtr0][cli[iCour].ar_nodesExtr1] = myTravelCost ;
-		ar_distanceNodes[cli[iCour].ar_nodesExtr1][cli[iCour].ar_nodesExtr0] = myTravelCost ;
+		if (myTravelCost < ar_distanceNodes[cli[iCour].ar_nodesExtr0][cli[iCour].ar_nodesExtr1])
+			ar_distanceNodes[cli[iCour].ar_nodesExtr0][cli[iCour].ar_nodesExtr1] = myTravelCost ;
+		if (myTravelCost < ar_distanceNodes[cli[iCour].ar_nodesExtr1][cli[iCour].ar_nodesExtr0])
+			ar_distanceNodes[cli[iCour].ar_nodesExtr1][cli[iCour].ar_nodesExtr0] = myTravelCost ;
 
 		fichier >> cli[iCour].demand ;
 		totalDemand += cli[iCour].demand ;
@@ -889,8 +891,10 @@ void Params::ar_parseOtherLinesNEARP()
 		fichier >> side0 ;
 		fichier >> side1 ;
 		fichier >> myTravelCost ;
-		ar_distanceNodes[side0][side1] = myTravelCost ;
-		ar_distanceNodes[side1][side0] = myTravelCost ;
+		if (myTravelCost < ar_distanceNodes[side0][side1])
+			ar_distanceNodes[side0][side1] = myTravelCost ;
+		if (myTravelCost < ar_distanceNodes[side1][side0])
+			ar_distanceNodes[side1][side0] = myTravelCost ;
 	}
 	getline(fichier, contenu);
 	if (ar_EdgesNonRequired > 0) getline(fichier, contenu);
@@ -905,7 +909,8 @@ void Params::ar_parseOtherLinesNEARP()
 
 		// setting the distance between the nodes
 		fichier >> myTravelCost ;
-		ar_distanceNodes[cli[iCour].ar_nodesExtr0][cli[iCour].ar_nodesExtr1] = myTravelCost ;
+		if (myTravelCost < ar_distanceNodes[cli[iCour].ar_nodesExtr0][cli[iCour].ar_nodesExtr1])
+			ar_distanceNodes[cli[iCour].ar_nodesExtr0][cli[iCour].ar_nodesExtr1] = myTravelCost ;
 
 		fichier >> cli[iCour].demand ;
 		totalDemand += cli[iCour].demand ;
@@ -926,7 +931,8 @@ void Params::ar_parseOtherLinesNEARP()
 		fichier >> side0 ;
 		fichier >> side1 ;
 		fichier >> myTravelCost ;
-		ar_distanceNodes[side0][side1] = myTravelCost ;
+		if (myTravelCost < ar_distanceNodes[side0][side1])
+			ar_distanceNodes[side0][side1] = myTravelCost ;
 	}
 
 	if (iCour != ar_ArcsRequired + ar_EdgesRequired + ar_NodesRequired + 1)
