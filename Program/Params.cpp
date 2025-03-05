@@ -589,7 +589,7 @@ void Params::setPatterns_PCARP(Client * myCli)
 	}
 }
 
-Params::Params(string nomInstance, string nomSolution, string nomBKS, int seedRNG, int type, bool timeCapacitated, bool soft, int nbVeh, int nbDep, bool isSearchingFeasible):type(type), timeCapacitated(timeCapacitated), softConstraints(soft), nbVehiculesPerDep(nbVeh), nbDepots(nbDep), isSearchingFeasible(isSearchingFeasible)
+Params::Params(string nomInstance, string nomSolution, string nomBKS, int seedRNG, int type, bool timeCapacitated, bool soft, int nbVeh, int nbDep, bool isSearchingFeasible, bool deadheadingArcs):type(type), timeCapacitated(timeCapacitated), softConstraints(soft), nbVehiculesPerDep(nbVeh), nbDepots(nbDep), isSearchingFeasible(isSearchingFeasible), deadheadingArcs(deadheadingArcs)
 {
 	// Main constructor of Params
 	pathToInstance = nomInstance ;
@@ -673,6 +673,20 @@ void Params::ar_InitializeDistanceNodes()
 	ar_distanceNodes.clear();
 	for (int i=0 ; i <= ar_NodesNonRequired+ar_NodesRequired ; i++)
 		ar_distanceNodes.push_back(myTemp);
+	
+	// If the "deadheading arcs" option is enabled, also initialize the predecessors matrix
+	if (deadheadingArcs)
+	{
+		// Build the ar_predNodes data structures
+		ar_predNodes.clear();
+		for (int i=0 ; i <= ar_NodesNonRequired+ar_NodesRequired ; i++)
+		{
+			vector <int> myTempPred = vector <int> (ar_NodesNonRequired+ar_NodesRequired+1) ; 
+			for (int j=0 ; j <= ar_NodesNonRequired+ar_NodesRequired ; j++)
+				myTempPred[j] = i ; 
+			ar_predNodes.push_back(myTempPred);
+		}
+	}
 }
 
 void Params::ar_computeDistancesNodes()
@@ -688,7 +702,11 @@ void Params::ar_computeDistancesNodes()
 			for (int j=1 ; j <= ar_NodesNonRequired + ar_NodesRequired ; j++)
 			{
 				if (ar_distanceNodes[i][k] + ar_distanceNodes[k][j] < ar_distanceNodes[i][j])
+				{
 					ar_distanceNodes[i][j] = ar_distanceNodes[i][k] + ar_distanceNodes[k][j] ;
+					if (deadheadingArcs)
+						ar_predNodes[i][j] = ar_predNodes[k][j] ;
+				}
 			}
 		}
 	}

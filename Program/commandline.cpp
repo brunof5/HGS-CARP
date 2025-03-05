@@ -41,7 +41,7 @@ void commandline::SetDefaultOutput(string to_parse)
 
 commandline::commandline(int argc, char* argv[])
 {
-	if (argc%2 != 0 || argc > 18 || argc < 2)
+	if (argc%2 != 0 || argc > 20 || argc < 2)
 	{
 		cout << "incorrect command line" << endl ;
 		command_ok = false;
@@ -58,6 +58,7 @@ commandline::commandline(int argc, char* argv[])
 	nbDep = -1 ;
 	timeCapacitated = false ;
 	softConstraints = false ;
+	deadheadingArcs = false ;
 
 	// reading the commandline parameters
 	for ( int i = 2 ; i < argc ; i += 2 )
@@ -80,6 +81,8 @@ commandline::commandline(int argc, char* argv[])
 			timeCapacitated = atoi(argv[i+1]) != 0;
 		else if ( string(argv[i]) == "-soft" )
 			softConstraints = atoi(argv[i+1]) != 0;
+		else if ( string(argv[i]) == "-dhead" )
+			deadheadingArcs = atoi(argv[i+1]) != 0;
 		else
 		{
 			cout << "Non-recognized command : " << string(argv[i]) << endl ;
@@ -168,6 +171,11 @@ bool commandline::get_timeCapacitated()
 bool commandline::get_softConstraints()
 {
 	return softConstraints;
+}
+
+bool commandline::get_deadheadingArcs()
+{
+	return deadheadingArcs;
 }
 
 bool commandline::is_valid()

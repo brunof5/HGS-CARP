@@ -52,6 +52,9 @@ class commandline
 		// soft constraints, if given (solutions violating capacity or duration constraints will be accepted with cost penalties applied)
 		bool softConstraints ;
 
+		// output deadheading arcs, if given (deadheading arcs will be included in the solution output)
+		bool deadheadingArcs ;
+
         // instance path
         string instance_name;
 
@@ -82,6 +85,7 @@ class commandline
         int get_seed();
         bool get_timeCapacitated();
         bool get_softConstraints();
+        bool get_deadheadingArcs();
 
         // say if the commandline is valid
         bool is_valid();

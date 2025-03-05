@@ -100,6 +100,9 @@ public:
 	void ar_InitializeDistanceNodes() ;
 	vector < vector < double > > ar_distanceNodes ;
 
+	// predecessors in the shortest paths between nodes of the original network
+	vector < vector < int > > ar_predNodes ;
+
 	/* CASE OF VEHICLE ROUTING PROBLEMS WITH TURN PENALTIES */
 	// paths between arcs in the original network
 	// the arc 0 is a fake arc which corresponds to the depot to himself
@@ -185,6 +188,10 @@ public:
 	// The preprocessing effort could also be limited to O(n^4/3) using hierarchies as in Irnich 2008 (JOC)
 	int sizeSD ; // Default 10
 
+	// Should we include deadheading arcs in the solution output ?
+	// In this case we build and keep a predecessor matrix
+	bool deadheadingArcs ;
+
 	/* ------------------------  PARSING ROUTINES  -------------------- */
 
 	// incoming data stream
@@ -220,7 +227,7 @@ public:
 	void shuffleProches () ;
 
 	// constructor
-	Params(string nomInstance, string nomSolution, string nomBKS, int seedRNG, int type, bool timeCapacitated, bool soft, int nbVeh, int nbDep, bool isSearchingFeasible);
+	Params(string nomInstance, string nomSolution, string nomBKS, int seedRNG, int type, bool timeCapacitated, bool soft, int nbVeh, int nbDep, bool isSearchingFeasible, bool deadheadingArcs);
 
 	// destructor
 	~Params(void);

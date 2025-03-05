@@ -519,6 +519,32 @@ void Population::ExportBest (string nomFichier)
 					myfile << " " << (int)rout.size() ; // Printing the number of customers in the route
 					for (int j=0 ; j < (int)rout.size() ; j++ ) // Printing the visits and their orientation
 					{
+						if (params->deadheadingArcs && j > 0)
+						{
+							// Using the predecessors matrix to reconstruct the shortest path connecting the previous service to the current one
+							vector <int> temp;
+							int orig = loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0][j-1].second;
+							int dest = loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0][j].first;
+							int curr = dest;
+							while (curr != orig)
+							{
+								temp.push_back(curr);
+								curr = params->ar_predNodes[orig][curr];
+							}
+							
+							// Printing the deadheading (travel) arcs in the shortest path, if any
+							if (!temp.empty())
+							{
+								temp.push_back(orig);
+								for (int n=(int)temp.size() - 1 ; n > 0 ; n-- )
+								{
+									myfile << " (T " ;
+									myfile << temp[n] << "," ;
+									myfile << temp[n-1] << ")" ;
+								}
+							}
+						}
+						
 						if (rout[j] < params->nbDepots)
 							myfile << " (D " ;
 						else
@@ -641,6 +667,32 @@ void Population::ExportBest (string nomFichier)
 						myfile << " " << (int)rout.size() ; // Printing the number of customers in the route
 						for (int j=0 ; j < (int)rout.size() ; j++ ) // Printing the visits and their orientation
 						{
+							if (params->deadheadingArcs && j > 0)
+							{
+								// Using the predecessors matrix to reconstruct the shortest path connecting the previous service to the current one
+								vector <int> temp;
+								int orig = loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0][j-1].second;
+								int dest = loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0][j].first;
+								int curr = dest;
+								while (curr != orig)
+								{
+									temp.push_back(curr);
+									curr = params->ar_predNodes[orig][curr];
+								}
+								
+								// Printing the deadheading (travel) arcs in the shortest path, if any
+								if (!temp.empty())
+								{
+									temp.push_back(orig);
+									for (int n=(int)temp.size() - 1 ; n > 0 ; n-- )
+									{
+										myfile << " (T " ;
+										myfile << temp[n] << "," ;
+										myfile << temp[n-1] << ")" ;
+									}
+								}
+							}
+							
 							if (rout[j] < params->nbDepots)
 								myfile << " (D " ;
 							else
