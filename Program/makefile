@@ -1,12 +1,18 @@
 all : gencarp
 
 CCC = g++
-CCFLAGS = -O3 -Wall  
+# debugging: CCFLAGS = -g -O0 -Wall
+# optimization: CCFLAGS = -O3 -Wall
+CCFLAGS = -O3 -Wall
 LIBS= -lm
 TARGETDIR=.
 CPPFLAGS += \
          -I.
-        
+# For the scenario where the instance is of type MCGRP-TP use the command: make TURN=1
+ifdef TURN
+CPPFLAGS += -DTURN_PENALTIES
+endif
+
 OBJS2 = \
         $(TARGETDIR)/Client.o \
         $(TARGETDIR)/Vehicle.o \
@@ -70,7 +76,6 @@ test: gencarp
 
 clean:
 	 $(RM) \
-	$(TARGETDIR)/gencarp \
 	$(TARGETDIR)/Client.o \
         $(TARGETDIR)/Vehicle.o \
        $(TARGETDIR)/main.o \
@@ -83,6 +88,3 @@ clean:
      $(TARGETDIR)/Params.o \
      $(TARGETDIR)/Population.o \
      $(TARGETDIR)/Route.o
-
-
-
