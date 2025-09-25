@@ -741,8 +741,11 @@ void Population::ExportBest (string nomFichier)
 						myfile << " " << (k-1)%params->ancienNbDays + 1 ; // Printing the day
 						myfile << " " << compteur ; // Printing the index of the route
 						myfile << " " << loc->routes[k][i].depot->pred->seq0_i->load ; // Printing the total demand
+						#ifndef TURN_PENALTIES 
 						myfile << " " << loc->routes[k][i].depot->pred->seq0_i->bestCost00 << " " ; // Printing the total cost of this route (without penalities)
-						
+						#else
+						myfile << " " << loc->routes[k][i].depot->pred->seq0_i->bestCost[0][0] << " " ; // Printing the total cost of this route (without penalities)
+						#endif
 						myfile << " " << (int)rout.size() ; // Printing the number of customers in the route
 						for (int j=0 ; j < (int)rout.size() ; j++ ) // Printing the visits and their orientation
 						{
