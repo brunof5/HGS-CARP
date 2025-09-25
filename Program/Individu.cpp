@@ -208,7 +208,11 @@ void Individu::generalSplit()
 	else 
 		estValide = false;
 
-	// If split was unsuccessful, we allow more capacity violations
+	// A quick test for safety (to avoid any possibility of infinite loops and printouts)
+	if (params->borne >= 100.0)
+		throw string ("Impossible to Split, most likely a problem of the dataset, aborting the run");
+	
+		// If split was unsuccessful, we allow more capacity violations
 	// Usually, the allowed capacity violation is largely sufficient, and this message would indicate a bug.
 	if ( coutSol.evaluation > 1.e20 ) 
 	{
@@ -216,10 +220,6 @@ void Individu::generalSplit()
 		params->borne *= 1.1 ;
 		generalSplit();
 	}
-
-	// A quick test for safety (to avoid any possibility of infinite loops and printouts)
-	if (params->borne >= 100.0)
-		throw string ("Impossible to Split, most likely a problem of the dataset, aborting the run"); 
 
 	isFitnessComputed = true ;
 	measureSol(); // calling a post-processing function which fills all other data structures and verifies the solution cost
@@ -261,7 +261,7 @@ int Individu::splitSimple(int k)
 		}
 	}
 
-	// Count the number of routes and see if the soltion is OK
+	// Count the number of routes and see if the solution is OK
 	j = (int)chromT[k].size() ;
 	for (int jj = 0 ; jj < params->nombreVehicules[k] ; jj ++ )
 	{
