@@ -200,13 +200,14 @@ void Params::preleveDonnees (string nomInstance)
 		getline(fichier, contenu);
 		getline(fichier, contenu);
 
+		ar_nbArcsDistance = 1 + totalArcs + 2*totalEdges ;
+
 		// Trying to detect if something went wrong when reading the instance
 		// These things could easily happen when specifying the wrong problem type for a given input data
 		if (ar_nbArcsDistance < 0 || ar_nbArcsDistance > 1000000)
 		throw string("PARSING ERROR : Incorrect number of arcs. A likely cause is the use of the wrong problem type");
 
 		// initializing list of arcs (used for the modes)
-		ar_nbArcsDistance = 1 + totalArcs + 2*totalEdges ;
 		ar_Arcs = vector <Arc> (ar_nbArcsDistance) ;
 		vector <Arc*> myTempVect = vector <Arc*> (this->ar_NodesNonRequired + this->ar_NodesRequired + 1, NULL) ;
 		ar_correspondingArc = vector < vector <Arc*> > (this->ar_NodesNonRequired + this->ar_NodesRequired + 1, myTempVect);
@@ -739,10 +740,14 @@ void Params::ar_computeDistancesArcs()
 	{
 		for (int i=0 ; i < ar_nbArcsDistance ; i++)
 		{
-			for (int j=0 ; j < ar_nbArcsDistance  ; j++)
+			for (int j=0 ; j < ar_nbArcsDistance ; j++)
 			{
 				if (ar_distanceArcs[i][k] + ar_distanceArcs[k][j] < ar_distanceArcs[i][j])
+				{
 					ar_distanceArcs[i][j] = ar_distanceArcs[i][k] + ar_distanceArcs[k][j] ;
+					if (deadheadingArcs)
+						ar_predArcs[i][j] = ar_predArcs[k][j] ;
+				}
 			}
 		}
 	}
@@ -1088,6 +1093,20 @@ void Params::ar_parseOtherLinesNEARP_TP()
 
 	for (int i=0 ; i < ar_nbArcsDistance ; i++)
 		ar_distanceArcs[i][i] = 0 ; 
+
+	// If we want to output deadheading arcs, also build predecessors on the line graph
+	if (deadheadingArcs)
+	{
+		// Build the ar_predArcs data structures
+		ar_predArcs.clear();
+		for (int i = 0; i < ar_nbArcsDistance; i++)
+		{
+			vector <int> myTempPred = vector <int> (ar_nbArcsDistance) ;
+			for (int j = 0; j < ar_nbArcsDistance; j++)
+				myTempPred[j] = i ;
+			ar_predArcs.push_back(myTempPred);
+		}
+	}
 
 	// distance of any connected pair of edges with a connected at the depot location should have a turn penalty of 0
 	for (int i=0 ; i < ar_nbArcsDistance ; i++)

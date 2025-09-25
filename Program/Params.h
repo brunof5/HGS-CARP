@@ -113,6 +113,8 @@ public:
 	vector < Arc > ar_Arcs ;
 	vector < vector < Arc * > > ar_correspondingArc ; // correspondingArc[i][j] returns a pointer to the associated arc between node i and j, otherwise, if non existing an error.
 	vector < vector < double > > ar_distanceArcs ;
+	// predecessors in the shortest paths between ARCS of the line graph (used when TURN_PENALTIES)
+	vector < vector < int > > ar_predArcs ;
 	void ar_computeDistancesArcs(); // computes the distance in the line graph
 
 	// number of customers/services considered in the vehicle routing problem
