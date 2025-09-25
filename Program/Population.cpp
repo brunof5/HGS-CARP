@@ -504,13 +504,13 @@ void Population::ExportBest (string nomFichier)
 						rout.push_back(noeudActuel->cour);
 					}
 
-					allRoutes[k].push_back(rout);
+					allRoutes[k].push_back(rout) ;
 					allRoutesArcs[k].push_back(loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0]) ;
 
 					if( loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0].size() != rout.size())
 						throw string ("Issue : mismatch between the route size and the number of arcs reported by the SeqData");
 
-					myfile << " " << loc->routes[k][i].depot->cour ; // Printing the depot
+					myfile << " " << loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0][0].first ; // Printing the depot
 					myfile << " " << (k-1)%params->ancienNbDays + 1 ; // Printing the day
 					myfile << " " << compteur ; // Printing the index of the route
 					myfile << " " << loc->routes[k][i].depot->pred->seq0_i->load ; // Printing the total demand
@@ -521,26 +521,96 @@ void Population::ExportBest (string nomFichier)
 					{
 						if (params->deadheadingArcs && j > 0)
 						{
-							// Using the predecessors matrix to reconstruct the shortest path connecting the previous service to the current one
-							vector <int> temp;
-							int orig = loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0][j-1].second;
-							int dest = loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0][j].first;
-							int curr = dest;
-							while (curr != orig)
+							if (!params->isTurnPenalties)	// CARP/NEARP
 							{
-								temp.push_back(curr);
-								curr = params->ar_predNodes[orig][curr];
-							}
-							
-							// Printing the deadheading (travel) arcs in the shortest path, if any
-							if (!temp.empty())
-							{
-								temp.push_back(orig);
-								for (int n=(int)temp.size() - 1 ; n > 0 ; n-- )
+								// Using the predecessors matrix to reconstruct the shortest path connecting the previous service to the current one
+								vector <int> temp;
+								int orig = loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0][j-1].second;
+								int dest = loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0][j].first;
+								int curr = dest;
+								while (curr != orig)
 								{
-									myfile << " (T " ;
-									myfile << temp[n] << "," ;
-									myfile << temp[n-1] << ")" ;
+									temp.push_back(curr);
+									curr = params->ar_predNodes[orig][curr];
+								}
+								
+								// Printing the deadheading (travel) arcs in the shortest path, if any
+								if (!temp.empty())
+								{
+									temp.push_back(orig);
+									for (int n=(int)temp.size() - 1 ; n > 0 ; n-- )
+									{
+										myfile << " (T " ;
+										myfile << temp[n] << "," ;
+										myfile << temp[n-1] << ")" ;
+									}
+								}
+							} else	// NEARP-TP
+							{
+								// Using the arc predecessors matrix to reconstruct the shortest path connecting the previous service to the current service
+								vector <int> temp;
+
+								// Arc indices from the route's bestCostArcs data
+								int prevArcIndex = -1;
+								int currArcIndex = -1;
+
+								// Find the arc indices for the previous and current services
+								if (j < (int)allRoutesArcs[k][i].size())
+								{
+									// Find the arc that corresponds to the previous service
+									for (int m = 0; m < params->cli[allRoutes[k][i][j-1]].ar_nbModes; m++)
+									{
+										if (params->cli[allRoutes[k][i][j-1]].ar_Modes[m]->nodeBegin == allRoutesArcs[k][i][j-1].first &&
+											params->cli[allRoutes[k][i][j-1]].ar_Modes[m]->nodeEnd == allRoutesArcs[k][i][j-1].second)
+										{
+											prevArcIndex = params->cli[allRoutes[k][i][j-1]].ar_Modes[m]->indexArc;
+											break;
+										}
+									}
+									
+									// Find the arc that corresponds to the current service
+									for (int m = 0; m < params->cli[allRoutes[k][i][j]].ar_nbModes; m++)
+									{
+										if (params->cli[allRoutes[k][i][j]].ar_Modes[m]->nodeBegin == allRoutesArcs[k][i][j].first &&
+											params->cli[allRoutes[k][i][j]].ar_Modes[m]->nodeEnd == allRoutesArcs[k][i][j].second)
+										{
+											currArcIndex = params->cli[allRoutes[k][i][j]].ar_Modes[m]->indexArc;
+											break;
+										}
+									}
+									
+									if (prevArcIndex != -1 && currArcIndex != -1)
+									{
+										int prevEndNode = params->ar_Arcs[prevArcIndex].nodeEnd;
+        								int currStartNode = params->ar_Arcs[currArcIndex].nodeBegin;
+
+										// Only add travel arcs if there's actually a gap between the arcs
+										if (prevEndNode != currStartNode)
+										{
+											// Reconstruct the path using predecessors
+											int currentArc = currArcIndex;
+											while (currentArc != prevArcIndex && params->ar_predArcs[prevArcIndex][currentArc] != currentArc)
+											{
+												temp.push_back(currentArc);
+												currentArc = params->ar_predArcs[prevArcIndex][currentArc];
+											}
+
+											// Print the deadheading arcs
+											if (!temp.empty())
+											{
+												// Start from the end of the previous arc
+												int fromNode = prevEndNode;
+												
+												// Print intermediate arcs in reverse order (from destination back to source)
+												for (int n = (int)temp.size() - 1; n > 0; n--)
+												{
+													int arcIndex = temp[n];
+													myfile << " (T " << fromNode << "," << params->ar_Arcs[arcIndex].nodeEnd << ")";
+													fromNode = params->ar_Arcs[arcIndex].nodeEnd;
+												}
+											}
+										}
+									}
 								}
 							}
 						}
@@ -555,6 +625,15 @@ void Population::ExportBest (string nomFichier)
 					}
 					myfile << endl ;
 					compteur ++ ;
+				}
+				else
+				{
+					if (params->deadheadingArcs)
+					{
+						// Inserting empty values just for deadheading with TP not break
+						allRoutes[k].push_back(vector <int> ()) ;
+						allRoutesArcs[k].push_back(vector <pair<int,int> > ()) ;
+					}
 				}
 			}
 		}
@@ -652,13 +731,13 @@ void Population::ExportBest (string nomFichier)
 							rout.push_back(noeudActuel->cour);
 						}
 
-						allRoutes[k].push_back(rout);
+						allRoutes[k].push_back(rout) ;
 						allRoutesArcs[k].push_back(loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0]) ;
 
 						if( loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0].size() != rout.size())
 							throw string ("Issue : mismatch between the route size and the number of arcs reported by the SeqData");
 
-						myfile << " " << loc->routes[k][i].depot->cour ; // Printing the depot
+						myfile << " " << loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0][0].first ; // Printing the depot
 						myfile << " " << (k-1)%params->ancienNbDays + 1 ; // Printing the day
 						myfile << " " << compteur ; // Printing the index of the route
 						myfile << " " << loc->routes[k][i].depot->pred->seq0_i->load ; // Printing the total demand
@@ -669,26 +748,96 @@ void Population::ExportBest (string nomFichier)
 						{
 							if (params->deadheadingArcs && j > 0)
 							{
-								// Using the predecessors matrix to reconstruct the shortest path connecting the previous service to the current one
-								vector <int> temp;
-								int orig = loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0][j-1].second;
-								int dest = loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0][j].first;
-								int curr = dest;
-								while (curr != orig)
+								if (!params->isTurnPenalties)	// CARP/NEARP
 								{
-									temp.push_back(curr);
-									curr = params->ar_predNodes[orig][curr];
-								}
-								
-								// Printing the deadheading (travel) arcs in the shortest path, if any
-								if (!temp.empty())
-								{
-									temp.push_back(orig);
-									for (int n=(int)temp.size() - 1 ; n > 0 ; n-- )
+									// Using the predecessors matrix to reconstruct the shortest path connecting the previous service to the current one
+									vector <int> temp;
+									int orig = loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0][j-1].second;
+									int dest = loc->routes[k][i].depot->pred->seq0_i->bestCostArcs[0][0][j].first;
+									int curr = dest;
+									while (curr != orig)
 									{
-										myfile << " (T " ;
-										myfile << temp[n] << "," ;
-										myfile << temp[n-1] << ")" ;
+										temp.push_back(curr);
+										curr = params->ar_predNodes[orig][curr];
+									}
+									
+									// Printing the deadheading (travel) arcs in the shortest path, if any
+									if (!temp.empty())
+									{
+										temp.push_back(orig);
+										for (int n=(int)temp.size() - 1 ; n > 0 ; n-- )
+										{
+											myfile << " (T " ;
+											myfile << temp[n] << "," ;
+											myfile << temp[n-1] << ")" ;
+										}
+									}
+								} else	// NEARP-TP
+								{
+									// Using the arc predecessors matrix to reconstruct the shortest path connecting the previous service to the current service
+									vector <int> temp;
+
+									// Arc indices from the route's bestCostArcs data
+									int prevArcIndex = -1;
+									int currArcIndex = -1;
+
+									// Find the arc indices for the previous and current services
+									if (j < (int)allRoutesArcs[k][i].size())
+									{
+										// Find the arc that corresponds to the previous service
+										for (int m = 0; m < params->cli[allRoutes[k][i][j-1]].ar_nbModes; m++)
+										{
+											if (params->cli[allRoutes[k][i][j-1]].ar_Modes[m]->nodeBegin == allRoutesArcs[k][i][j-1].first &&
+												params->cli[allRoutes[k][i][j-1]].ar_Modes[m]->nodeEnd == allRoutesArcs[k][i][j-1].second)
+											{
+												prevArcIndex = params->cli[allRoutes[k][i][j-1]].ar_Modes[m]->indexArc;
+												break;
+											}
+										}
+										
+										// Find the arc that corresponds to the current service
+										for (int m = 0; m < params->cli[allRoutes[k][i][j]].ar_nbModes; m++)
+										{
+											if (params->cli[allRoutes[k][i][j]].ar_Modes[m]->nodeBegin == allRoutesArcs[k][i][j].first &&
+												params->cli[allRoutes[k][i][j]].ar_Modes[m]->nodeEnd == allRoutesArcs[k][i][j].second)
+											{
+												currArcIndex = params->cli[allRoutes[k][i][j]].ar_Modes[m]->indexArc;
+												break;
+											}
+										}
+										
+										if (prevArcIndex != -1 && currArcIndex != -1)
+										{
+											int prevEndNode = params->ar_Arcs[prevArcIndex].nodeEnd;
+											int currStartNode = params->ar_Arcs[currArcIndex].nodeBegin;
+
+											// Only add travel arcs if there's actually a gap between the arcs
+											if (prevEndNode != currStartNode)
+											{
+												// Reconstruct the path using predecessors
+												int currentArc = currArcIndex;
+												while (currentArc != prevArcIndex && params->ar_predArcs[prevArcIndex][currentArc] != currentArc)
+												{
+													temp.push_back(currentArc);
+													currentArc = params->ar_predArcs[prevArcIndex][currentArc];
+												}
+
+												// Print the deadheading arcs
+												if (!temp.empty())
+												{
+													// Start from the end of the previous arc
+													int fromNode = prevEndNode;
+													
+													// Print intermediate arcs in reverse order (from destination back to source)
+													for (int n = (int)temp.size() - 1; n > 0; n--)
+													{
+														int arcIndex = temp[n];
+														myfile << " (T " << fromNode << "," << params->ar_Arcs[arcIndex].nodeEnd << ")";
+														fromNode = params->ar_Arcs[arcIndex].nodeEnd;
+													}
+												}
+											}
+										}
 									}
 								}
 							}
@@ -703,6 +852,15 @@ void Population::ExportBest (string nomFichier)
 						}
 						myfile << endl ;
 						compteur ++ ;
+					}
+					else
+					{
+						if (params->deadheadingArcs)
+						{
+							// Inserting empty values just for deadheading with TP not break
+							allRoutes[k].push_back(vector <int> ()) ;
+							allRoutesArcs[k].push_back(vector <pair<int,int> > ()) ;
+						}
 					}
 				}
 			}
@@ -728,6 +886,9 @@ bool Population::solutionChecker(vector < vector < vector < int > > > & allRoute
 	{
 		for (int r=0 ; r < (int)allRoutes[d].size() ; r++)
 		{
+			// If a route is empty it means a vehicle is not used
+			if (allRoutes[d][r].empty()) continue ;
+			
 			for (int i=1 ; i < (int)allRoutes[d][r].size() - 1; i++ )
 			{
 				currentPatterns[allRoutes[d][r][i]] += (int)pow(2.0,params->nbDays-d);
@@ -756,6 +917,8 @@ bool Population::solutionChecker(vector < vector < vector < int > > > & allRoute
 	{
 		for (int r=0 ; r < (int)allRoutes[d].size() ; r++)
 		{
+			if (allRoutes[d][r].empty()) continue ;
+			
 			// For each route
 			if (allRoutes[d][r][0] >= params->nbDepots)
 			{
@@ -798,6 +961,8 @@ bool Population::solutionChecker(vector < vector < vector < int > > > & allRoute
 	{
 		for (int r=0 ; r < (int)allRoutes[d].size() ; r++)
 		{
+			if (allRoutes[d][r].empty()) continue ;
+			
 			// For each route, sum the distances (case of the CARP)
 			routeCost = 0 ;
 			
